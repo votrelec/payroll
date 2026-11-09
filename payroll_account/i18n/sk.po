@@ -147,20 +147,26 @@ msgstr "Účtovná kniha výdajov \"%s\" nemá správne nastavený debetný úč
 #. module: payroll_account
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip__display_name
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_employees__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_input__display_name
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_line__display_name
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_run__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_worked_days__display_name
 #: model:ir.model.fields,field_description:payroll_account.field_hr_salary_rule__display_name
 #: model:ir.model.fields,field_description:payroll_account.field_hr_version__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_payroll_account_child_guard__display_name
 msgid "Display Name"
 msgstr ""
 
 #. module: payroll_account
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip__id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_employees__id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_input__id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_line__id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_run__id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_worked_days__id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_salary_rule__id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_version__id
+#: model:ir.model.fields,field_description:payroll_account.field_payroll_account_child_guard__id
 msgid "ID"
 msgstr ""
 
@@ -173,6 +179,21 @@ msgid ""
 msgstr ""
 "Táto výplatná páska má účtovný zápis. Pred návratom do návrhu alebo "
 "prepočtom použite postup zrušenia alebo opravy mzdy."
+
+#. module: payroll_account
+#: model:ir.model,name:payroll_account.model_payroll_account_child_guard
+msgid "Accounted Payroll Child Guard"
+msgstr "Ochrana podkladov zaúčtovanej mzdy"
+
+#. module: payroll_account
+#: model:ir.model,name:payroll_account.model_hr_payslip_input
+msgid "Payslip Input"
+msgstr ""
+
+#. module: payroll_account
+#: model:ir.model,name:payroll_account.model_hr_payslip_worked_days
+msgid "Payslip Worked Days"
+msgstr ""
 
 #~ msgid "Company"
 #~ msgstr ""

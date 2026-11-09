@@ -5,7 +5,11 @@ from odoo import models
 
 
 class HrPayslipLine(models.Model):
-    _inherit = "hr.payslip.line"
+    _name = 'hr.payslip.line'
+    _inherit = ['hr.payslip.line', 'payroll.account.child.guard']
+    _accounting_parent_field = 'slip_id'
+    _accounting_protected_fields = frozenset(('slip_id', 'employee_id', 'contract_id',
+        'salary_rule_id', 'category_id', 'code', 'amount', 'quantity', 'rate', 'total', 'company_id'))
 
     def _get_partner_id(self, credit_account):
         """

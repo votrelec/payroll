@@ -6,7 +6,7 @@ from dateutil import relativedelta
 
 from odoo import fields
 from odoo.exceptions import UserError
-from odoo.tests import Form, common
+from odoo.tests import Form, common, new_test_user
 
 
 class TestPayrollAccount(common.TransactionCase):
@@ -33,6 +33,91 @@ class TestPayrollAccount(common.TransactionCase):
         )
         self.assertEqual(payslip.move_id, move)
         self.assertEqual(move.line_ids.ids, move_lines)
+
+    def test_direct_salary_line_edits_preserve_accounted_payroll(self):
+        payslip = self._posted_lifecycle_slip()
+        line = payslip.line_ids[:1]
+        before = line.amount
+        with self.assertRaises(UserError):
+            line.amount = before + 100
+        with self.assertRaises(UserError):
+            line.unlink()
+        with self.assertRaises(UserError):
+            line.copy({'slip_id': payslip.id})
+        self.assertEqual(line.amount, before)
+        line.name = 'Retained amount, corrected description'
+
+    def test_direct_worked_time_edits_preserve_accounted_payroll(self):
+        payslip = self._posted_lifecycle_slip()
+        with self.assertRaises(UserError):
+            self.env['hr.payslip.worked_days'].with_context(default_payslip_id=payslip.id).create({
+                'name': 'Unreviewed extra time', 'code': 'EXTRA',
+                'contract_id': payslip.contract_id.id, 'number_of_days': 1, 'number_of_hours': 8})
+
+    def test_direct_input_edits_preserve_accounted_payroll(self):
+        payslip = self._posted_lifecycle_slip()
+        with self.assertRaises(UserError):
+            self.env['hr.payslip.input'].with_context(default_payslip_id=payslip.id).create({
+                'name': 'Unreviewed input', 'code': 'EXTRA',
+                'contract_id': payslip.contract_id.id, 'amount': 100})
+
+    def test_accounted_parent_cannot_detach_entry_or_change_payroll_identity(self):
+        payslip = self._posted_lifecycle_slip()
+        for values in ({'move_id': False}, {'state': 'draft'}, {'credit_note': True}):
+            with self.assertRaises(UserError):
+                payslip.write(values)
+
+    def test_accounted_child_cannot_be_moved_into_a_draft(self):
+        posted = self._posted_lifecycle_slip()
+        draft = self._prepare_payslip(self.hr_employee_john)
+        with self.assertRaises(UserError):
+            posted.line_ids[:1].write({'slip_id': draft.id})
+
+    def test_native_refund_sheet_keeps_original_and_posts_new_entry(self):
+        payslip = self._posted_lifecycle_slip()
+        original = payslip.move_id
+        result = payslip.refund_sheet()
+        self.assertTrue(result)
+        self.assertEqual(payslip.move_id, original)
+        self.assertNotEqual(payslip.refunded_id.move_id, original)
+        self.assertEqual(payslip.refunded_id.move_id.state, 'posted')
+
+    def test_accounted_input_batch_is_rejected_before_draft_mutation(self):
+        self._update_account_in_rule(self.account_debit, self.account_credit)
+        posted = self._prepare_payslip(self.hr_employee_john)
+        posted.journal_id = self.account_journal
+        original = self.env['hr.payslip.input'].create({'name': 'Retained input',
+            'code': 'EXTRA', 'contract_id': posted.contract_id.id, 'payslip_id': posted.id, 'amount': 1})
+        time = self.env['hr.payslip.worked_days'].create({'name': 'Retained hours',
+            'code': 'WORK100', 'contract_id': posted.contract_id.id, 'payslip_id': posted.id,
+            'number_of_days': 1, 'number_of_hours': 8})
+        posted.compute_sheet()
+        posted.action_payslip_done()
+        draft = self._prepare_payslip(self.hr_employee_john)
+        editable = original.copy({'payslip_id': draft.id})
+        editable.amount = 2
+        for record, values in ((original | editable, {'amount': 99}), (time, {'number_of_hours': 99})):
+            with self.assertRaises(UserError):
+                record.write(values)
+        self.assertEqual(editable.amount, 2)
+        for record in (original, time):
+            with self.assertRaises(UserError):
+                record.unlink()
+        editable.unlink()
+
+    def test_payroll_user_can_edit_a_draft_but_not_accounted_salary(self):
+        posted = self._posted_lifecycle_slip()
+        draft = posted.copy()
+        user = new_test_user(self.env, login='payroll-child-guard-user',
+            groups='base.group_user,hr.group_hr_user,payroll.group_payroll_user,account.group_account_user',
+            company_id=self.env.company.id, company_ids=[(6, 0, self.env.company.ids)])
+        manager = self.env['hr.employee'].create({'name': 'Payroll department officer', 'user_id': user.id})
+        self.hr_employee_john.department_id.manager_id = manager
+        editable = draft.line_ids[:1].with_user(user)
+        editable.amount = 123
+        self.assertEqual(editable.amount, 123)
+        with self.assertRaises(UserError):
+            posted.line_ids[:1].with_user(user).amount = 123
 
     def test_reset_preserves_posted_salary_state_and_entry(self):
         payslip = self._posted_lifecycle_slip()

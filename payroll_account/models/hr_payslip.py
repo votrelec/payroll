@@ -61,8 +61,17 @@ class HrPayslip(models.Model):
                 payslip.move_id.with_context(force_delete=True).unlink()
             else:
                 payslip.move_id._reverse_moves()
-                payslip.move_id = False
+                # Internal transition after the explicit reversal. Public
+                # writes cannot detach an entry to bypass history guards.
+                super(HrPayslip, payslip).write({'move_id': False})
         return super().action_payslip_cancel()
+
+    def write(self, values):
+        if {'company_id', 'employee_id', 'contract_id', 'struct_id', 'date_from',
+                'date_to', 'credit_note', 'journal_id', 'date', 'state', 'move_id',
+                'line_ids', 'worked_days_line_ids', 'input_line_ids'}.intersection(values):
+            self._check_no_accounting_entry()
+        return super().write(values)
 
     def _check_no_accounting_entry(self):
         """Reset/recalculation does not reverse an existing journal entry."""
