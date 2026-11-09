@@ -10,6 +10,83 @@ from odoo.tests import Form, common
 
 
 class TestPayrollAccount(common.TransactionCase):
+    def _posted_lifecycle_slip(self):
+        self._update_account_in_rule(self.account_debit, self.account_credit)
+        payslip = self._prepare_payslip(self.hr_employee_john)
+        payslip.journal_id = self.account_journal
+        payslip.compute_sheet()
+        payslip.action_payslip_done()
+        self.assertEqual(payslip.move_id.state, "posted")
+        return payslip
+
+    def test_recompute_preserves_posted_salary_and_journal_entry(self):
+        payslip = self._posted_lifecycle_slip()
+        before = [(line.id, line.code, line.total) for line in payslip.line_ids]
+        move = payslip.move_id
+        move_lines = move.line_ids.ids
+        payslip.contract_id.wage += 100
+        with self.assertRaises(UserError):
+            payslip.compute_sheet()
+        self.assertEqual(payslip.state, "done")
+        self.assertEqual(
+            [(line.id, line.code, line.total) for line in payslip.line_ids], before
+        )
+        self.assertEqual(payslip.move_id, move)
+        self.assertEqual(move.line_ids.ids, move_lines)
+
+    def test_reset_preserves_posted_salary_state_and_entry(self):
+        payslip = self._posted_lifecycle_slip()
+        with self.assertRaises(UserError):
+            payslip.action_payslip_draft()
+        self.assertEqual(payslip.state, "done")
+        self.assertEqual(payslip.move_id.state, "posted")
+
+    def test_mixed_batch_refuses_before_recalculating_a_draft(self):
+        posted = self._posted_lifecycle_slip()
+        draft = self._prepare_payslip(self.hr_employee_john)
+        before = [(line.id, line.code, line.total) for line in draft.line_ids]
+        for method in ("compute_sheet", "action_payslip_draft"):
+            with self.assertRaises(UserError):
+                getattr(draft | posted, method)()
+            self.assertEqual(
+                [(line.id, line.code, line.total) for line in draft.line_ids], before
+            )
+            self.assertEqual(posted.state, "done")
+
+    def test_reset_without_accounting_entry_remains_available(self):
+        payslip = self._prepare_payslip(self.hr_employee_john)
+        payslip.journal_id = self.account_journal
+        payslip.compute_sheet()
+        payslip.action_payslip_done()
+        self.assertFalse(payslip.move_id)
+        payslip.action_payslip_draft()
+        payslip.compute_sheet()
+        self.assertEqual(payslip.state, "verify")
+
+    def test_confirmation_without_recompute_cannot_create_another_entry(self):
+        payslip = self._posted_lifecycle_slip()
+        before = self.env["account.move"].search_count([])
+        original = payslip.move_id
+        with self.assertRaises(UserError):
+            payslip.with_context(without_compute_sheet=True).action_payslip_done()
+        self.assertEqual(self.env["account.move"].search_count([]), before)
+        self.assertEqual(payslip.move_id, original)
+
+    def test_credit_note_uses_a_separate_accounting_entry(self):
+        posted = self._posted_lifecycle_slip()
+        original_move = posted.move_id
+        refund = posted.copy({"credit_note": True})
+        refund.compute_sheet()
+        refund.action_payslip_done()
+        self.assertEqual(refund.move_id.state, "posted")
+        self.assertNotEqual(refund.move_id, original_move)
+        count = self.env["account.move"].search_count([])
+        for context in ({}, {"without_compute_sheet": True}):
+            with self.assertRaises(UserError):
+                posted.with_context(**context).action_payslip_done()
+        self.assertEqual(self.env["account.move"].search_count([]), count)
+        self.assertEqual(posted.move_id, original_move)
+
     def setUp(self):
         super().setUp()
 
@@ -143,6 +220,7 @@ class TestPayrollAccount(common.TransactionCase):
                 "employee_id": self.hr_employee_john.id,
                 "contract_id": self.hr_contract_john.id,
                 "struct_id": self.hr_structure_softwaredeveloper.id,
+                "journal_id": self.account_journal.id,
             }
         )
         res = self.hr_payslip.get_payslip_vals(date_from, date_to, employee.id)

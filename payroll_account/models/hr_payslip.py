@@ -64,7 +64,36 @@ class HrPayslip(models.Model):
                 payslip.move_id = False
         return super().action_payslip_cancel()
 
+    def _check_no_accounting_entry(self):
+        """Reset/recalculation does not reverse an existing journal entry."""
+        self.check_access("write")
+        if self:
+            self.env.cr.execute(
+                "SELECT id FROM hr_payslip WHERE id IN %s ORDER BY id FOR UPDATE",
+                [tuple(sorted(self.ids))],
+            )
+            self.invalidate_recordset()
+        if self.filtered("move_id"):
+            raise UserError(
+                self.env._(
+                    "This payslip has an accounting entry. Use the payroll "
+                    "cancellation or correction workflow before resetting "
+                    "or recalculating it."
+                )
+            )
+
+    def compute_sheet(self):
+        self._check_no_accounting_entry()
+        return super().compute_sheet()
+
+    def action_payslip_draft(self):
+        self._check_no_accounting_entry()
+        return super().action_payslip_draft()
+
     def action_payslip_done(self):
+        # Do not rely on compute_sheet: without_compute_sheet and
+        # prevent_compute_on_confirm legitimately skip that method.
+        self._check_no_accounting_entry()
         res = super().action_payslip_done()
 
         for slip in self:

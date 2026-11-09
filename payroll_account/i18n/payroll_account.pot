@@ -4,8 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 18.0\n"
+"Project-Id-Version: Odoo Server 19.0-20261102\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-09 13:13+0000\n"
+"PO-Revision-Date: 2026-11-09 13:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -31,9 +33,10 @@ msgid "Adjustment Entry"
 msgstr ""
 
 #. module: payroll_account
-#: model:ir.model.fields,field_description:payroll_account.field_hr_contract__analytic_account_id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_employee__analytic_account_id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_line__analytic_account_id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_salary_rule__analytic_account_id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_version__analytic_account_id
 msgid "Analytic Account"
 msgstr ""
 
@@ -61,13 +64,33 @@ msgid "Debit Account"
 msgstr ""
 
 #. module: payroll_account
-#: model:ir.model,name:payroll_account.model_hr_contract
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_employees__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_line__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_run__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_hr_salary_rule__display_name
+#: model:ir.model.fields,field_description:payroll_account.field_hr_version__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: payroll_account
+#: model:ir.model,name:payroll_account.model_hr_version
 msgid "Employee Contract"
 msgstr ""
 
 #. module: payroll_account
 #: model:ir.model,name:payroll_account.model_hr_payslip_employees
 msgid "Generate payslips for all selected employees"
+msgstr ""
+
+#. module: payroll_account
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip__id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_employees__id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_line__id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_run__id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_salary_rule__id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_version__id
+msgid "ID"
 msgstr ""
 
 #. module: payroll_account
@@ -97,9 +120,10 @@ msgid "Payslip of %s"
 msgstr ""
 
 #. module: payroll_account
-#: model:ir.model.fields,field_description:payroll_account.field_hr_contract__journal_id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_employee__journal_id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip__journal_id
 #: model:ir.model.fields,field_description:payroll_account.field_hr_payslip_run__journal_id
+#: model:ir.model.fields,field_description:payroll_account.field_hr_version__journal_id
 msgid "Salary Journal"
 msgstr ""
 
@@ -130,4 +154,12 @@ msgstr ""
 #. odoo-python
 #: code:addons/payroll_account/models/hr_payslip.py:0
 msgid "The Expense Journal \"%s\" has not properly configured the Debit Account!"
+msgstr ""
+
+#. module: payroll_account
+#. odoo-python
+#: code:addons/payroll_account/models/hr_payslip.py:0
+msgid ""
+"This payslip has an accounting entry. Use the payroll cancellation or "
+"correction workflow before resetting or recalculating it."
 msgstr ""
